@@ -4,7 +4,7 @@ local UIS = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 
 -- Configuration
-local OFFSET_Y = -10000000 -- The distance to teleport down (User requested large number)
+local OFFSET_Y = -10000000 -- The void teleport distance
 
 local State = {
     Enabled = false,
@@ -22,7 +22,6 @@ local function CacheCharacter(character)
     State.Parts = {}
     State.OriginalTransparencies = {}
     
-    -- Cache all parts to restore transparency later
     for _, part in ipairs(character:GetDescendants()) do
         if part:IsA("BasePart") and part.Transparency < 1 then
             State.OriginalTransparencies[part] = part.Transparency
@@ -32,15 +31,13 @@ local function CacheCharacter(character)
 end
 
 local function UpdateVisuals()
-    -- Updates the local transparency of the character
     if not LocalPlayer.Character then return end
     
     for _, part in ipairs(State.Parts) do
         if part and part.Parent then
             if State.Enabled then
-                part.Transparency = 0.5
+                part.Transparency = 0.5 -- Visual indicator only (Local)
             else
-                -- Restore original transparency (or default to 0)
                 part.Transparency = State.OriginalTransparencies[part] or 0
             end
         end
@@ -50,19 +47,30 @@ end
 local function ToggleInvisibility(uiLabel)
     State.Enabled = not State.Enabled
     
-    -- Update visual transparency immediately
     UpdateVisuals()
     
     if uiLabel then
         uiLabel.Text = State.Enabled and "STATUS: HIDDEN" or "STATUS: VISIBLE"
         uiLabel.TextColor3 = State.Enabled and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(255, 85, 85)
     end
+
+    -- ANTI-SHAKE FIX (Physics Based, No Noclip)
+    -- We set MaxSlopeAngle to ~90 deg so the game doesn't try to slide you on hills
+    if State.Enabled and LocalPlayer.Character then
+        local hum = LocalPlayer.Character:FindFirstChild("Humanoid")
+        if hum then 
+            hum.MaxSlopeAngle = 89.5 
+        end
+    elseif not State.Enabled and LocalPlayer.Character then
+        -- Optional: Reset to default when disabled
+        local hum = LocalPlayer.Character:FindFirstChild("Humanoid")
+        if hum then hum.MaxSlopeAngle = 45 end 
+    end
 end
 
 --// UI CONSTRUCTION
 
 local function CreateModernUI()
-    -- Check for existing GUI to prevent duplicates
     local existing = LocalPlayer:WaitForChild("PlayerGui"):FindFirstChild("InvisUtility")
     if existing then existing:Destroy() end
 
@@ -71,12 +79,11 @@ local function CreateModernUI()
     screenGui.ResetOnSpawn = false
     
     local frame = Instance.new("Frame", screenGui)
-    frame.Size = UDim2.new(0, 220, 0, 90) -- Slightly larger for touch
+    frame.Size = UDim2.new(0, 220, 0, 90)
     frame.Position = UDim2.new(0.5, -110, 0.15, 0)
     frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
     frame.BorderSizePixel = 0
     
-    -- Styling
     local corner = Instance.new("UICorner", frame)
     corner.CornerRadius = UDim.new(0, 10)
     
@@ -106,7 +113,7 @@ local function CreateModernUI()
     local btnCorner = Instance.new("UICorner", button)
     btnCorner.CornerRadius = UDim.new(0, 6)
 
-    --// DRAG LOGIC (Mobile + PC)
+    -- Mobile/PC Drag Logic
     local function InputBegan(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             State.Dragging = true
@@ -138,7 +145,6 @@ local function CreateModernUI()
     frame.InputBegan:Connect(InputBegan)
     UIS.InputChanged:Connect(InputChanged)
 
-    -- Button Logic
     button.MouseButton1Click:Connect(function() ToggleInvisibility(statusLabel) end)
     
     return statusLabel
@@ -146,10 +152,9 @@ end
 
 local statusRef = CreateModernUI()
 
---// CORE INVISIBILITY LOOP
+--// MAIN LOOP
 
 local function StartLoops()
-    -- Clear old connections if script re-runs
     if State.Connections.Heartbeat then State.Connections.Heartbeat:Disconnect() end
 
     State.Connections.Heartbeat = RunService.Heartbeat:Connect(function()
@@ -158,24 +163,20 @@ local function StartLoops()
             local hum = LocalPlayer.Character:FindFirstChild("Humanoid")
             
             if root and hum then
-                -- 1. Save current valid position
                 local oldCF = root.CFrame
                 local oldCamOffset = hum.CameraOffset
                 
-                -- 2. Teleport logic: Move RootPart way down
-                -- This tricks the server into updating your position as "in the void"
+                -- Teleport Down
                 local newCF = oldCF * CFrame.new(0, OFFSET_Y, 0)
                 root.CFrame = newCF
                 
-                -- 3. Fix Camera: Adjust offset so you don't see yourself fall
-                -- We calculate the offset needed to keep the camera looking at the original spot
+                -- Adjust Camera to look normal
                 local offsetFix = newCF:ToObjectSpace(CFrame.new(oldCF.Position)).Position
                 hum.CameraOffset = offsetFix
                 
-                -- 4. Wait for the frame to render (Client sees this frame)
                 RunService.RenderStepped:Wait()
                 
-                -- 5. Restore position immediately (So you don't actually fall)
+                -- Restore Position
                 root.CFrame = oldCF
                 hum.CameraOffset = oldCamOffset
             end
@@ -183,15 +184,14 @@ local function StartLoops()
     end)
 end
 
---// INITIALIZATION & EVENTS
+--// INITIALIZATION
 
 LocalPlayer.CharacterAdded:Connect(function(char)
-    State.Enabled = false -- Reset on death/spawn
+    State.Enabled = false
     if statusRef then
         statusRef.Text = "STATUS: VISIBLE"
         statusRef.TextColor3 = Color3.fromRGB(255, 85, 85)
     end
-    
     task.wait(1)
     CacheCharacter(char)
 end)
@@ -202,10 +202,8 @@ UIS.InputBegan:Connect(function(input, processed)
     end
 end)
 
--- Initial Setup
 if LocalPlayer.Character then 
     CacheCharacter(LocalPlayer.Character) 
 end
 StartLoops()
-
 
