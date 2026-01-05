@@ -14,7 +14,9 @@ local function CacheCharacter(character)
     State.Parts = {}
     State.OriginalTransparencies = {}
     
-    for _, part in ipairs(character:GetDescendants()) do
+    local descendants = character:GetDescendants()
+    for i = 1, #descendants do
+        local part = descendants[i]
         if part:IsA("BasePart") then
             State.OriginalTransparencies[part] = part.Transparency
             table.insert(State.Parts, part)
@@ -25,15 +27,25 @@ end
 local function ToggleInvisibility(uiLabel)
     State.Enabled = not State.Enabled
     
-    for _, part in ipairs(State.Parts) do
+    for i = 1, #State.Parts do
+        local part = State.Parts[i]
         if part and part.Parent then
-            part.Transparency = State.Enabled and 0.5 or State.OriginalTransparencies[part]
+            if State.Enabled then
+                part.Transparency = 0.5
+            else
+                part.Transparency = State.OriginalTransparencies[part] or 0
+            end
         end
     end
     
     if uiLabel then
-        uiLabel.Text = State.Enabled and "STATUS: HIDDEN" or "STATUS: VISIBLE"
-        uiLabel.TextColor3 = State.Enabled and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(255, 85, 85)
+        if State.Enabled then
+            uiLabel.Text = "STATUS: HIDDEN"
+            uiLabel.TextColor3 = Color3.fromRGB(0, 255, 127)
+        else
+            uiLabel.Text = "STATUS: VISIBLE"
+            uiLabel.TextColor3 = Color3.fromRGB(255, 85, 85)
+        end
     end
 end
 
@@ -100,7 +112,9 @@ local function CreateModernUI()
         end
     end)
 
-    button.MouseButton1Click:Connect(function() ToggleInvisibility(statusLabel) end)
+    button.MouseButton1Click:Connect(function() 
+        ToggleInvisibility(statusLabel)
+    end)
     
     return statusLabel
 end
@@ -108,7 +122,9 @@ end
 local statusRef = CreateModernUI()
 
 local function StartLoops()
-    for _, conn in pairs(State.Connections) do conn:Disconnect() end
+    for i, conn in pairs(State.Connections) do 
+        conn:Disconnect()
+    end
 
     State.Connections.Heartbeat = RunService.Heartbeat:Connect(function()
         if State.Enabled and LocalPlayer.Character then
@@ -119,12 +135,15 @@ local function StartLoops()
                 local oldCF = root.CFrame
                 local oldOffset = hum.CameraOffset
                 
-                root.CFrame = oldCF * CFrame.new(0, -1e6, 0) 
-                hum.CameraOffset = (oldCF * CFrame.new(0, -1e6, 0)):ToObjectSpace(CFrame.new(oldCF.Position)).Position
+                local hiddenCFrame = oldCF * CFrame.new(0, -200000, 0)
+                root.CFrame = hiddenCFrame
+                
+                local localCamPos = hiddenCFrame:ToObjectSpace(CFrame.new(oldCF.Position)).Position
+                hum.CameraOffset = localCamPos
                 
                 RunService.RenderStepped:Wait()
                 
-                root.CFrame = oldCF 
+                root.CFrame = oldCF
                 hum.CameraOffset = oldOffset
             end
         end
@@ -145,5 +164,8 @@ UIS.InputBegan:Connect(function(input, processed)
     end
 end)
 
-if LocalPlayer.Character then CacheCharacter(LocalPlayer.Character) end
+if LocalPlayer.Character then 
+    CacheCharacter(LocalPlayer.Character)
+end
+
 StartLoops()
