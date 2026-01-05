@@ -18,49 +18,65 @@ Gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
 Main.Name = "Main"
 Main.Parent = Gui
-Main.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+Main.BackgroundColor3 = Color3.fromRGB(75, 75, 75)
 Main.BorderSizePixel = 0
-Main.Position = UDim2.new(0.335, 0, 0.542, 0)
-Main.Size = UDim2.new(0.24, 0, 0.166, 0)
+Main.Position = UDim2.new(0.335954279, 0, 0.542361975, 0)
+Main.Size = UDim2.new(0.240350261, 0, 0.166880623, 0)
 Main.Active = true
 Main.Draggable = true
 
 Box.Name = "Box"
 Box.Parent = Main
-Box.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+Box.BackgroundColor3 = Color3.fromRGB(95, 95, 95)
 Box.BorderSizePixel = 0
-Box.Position = UDim2.new(0.1, 0, 0.25, 0)
-Box.Size = UDim2.new(0.8, 0, 0.35, 0)
+Box.Position = UDim2.new(0.0980926454, 0, 0.218712583, 0)
+Box.Size = UDim2.new(0.801089942, 0, 0.364963502, 0)
 Box.FontFace = Font.new("rbxasset://fonts/families/SourceSansSemibold.json", Enum.FontWeight.Bold, Enum.FontStyle.Normal)
-Box.PlaceholderText = "Target Name"
+Box.PlaceholderText = "Player here"
 Box.Text = ""
 Box.TextColor3 = Color3.fromRGB(255, 255, 255)
 Box.TextScaled = true
+Box.TextWrapped = true
+
+UITextSizeConstraint.Parent = Box
+UITextSizeConstraint.MaxTextSize = 31
 
 Label.Name = "Label"
 Label.Parent = Main
-Label.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-Label.Size = UDim2.new(1, 0, 0.2, 0)
-Label.Text = "Hostile Part Bringer"
-Label.TextColor3 = Color3.fromRGB(255, 0, 0)
+Label.BackgroundColor3 = Color3.fromRGB(95, 95, 95)
+Label.BorderSizePixel = 0
+Label.Size = UDim2.new(1, 0, 0.160583943, 0)
+Label.FontFace = Font.new("rbxasset://fonts/families/Nunito.json", Enum.FontWeight.Bold, Enum.FontStyle.Normal)
+Label.Text = "Bring Parts"
+Label.TextColor3 = Color3.fromRGB(255, 255, 255)
 Label.TextScaled = true
+Label.TextWrapped = true
+
+UITextSizeConstraint_2.Parent = Label
+UITextSizeConstraint_2.MaxTextSize = 21
 
 Button.Name = "Button"
 Button.Parent = Main
-Button.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-Button.Position = UDim2.new(0.15, 0, 0.65, 0)
-Button.Size = UDim2.new(0.7, 0, 0.3, 0)
-Button.Text = "ACTIVATE"
+Button.BackgroundColor3 = Color3.fromRGB(95, 95, 95)
+Button.BorderSizePixel = 0
+Button.Position = UDim2.new(0.183284417, 0, 0.656760991, 0)
+Button.Size = UDim2.new(0.629427791, 0, 0.277372271, 0)
+Button.Font = Enum.Font.Nunito
+Button.Text = "Bring Off"
 Button.TextColor3 = Color3.fromRGB(255, 255, 255)
 Button.TextScaled = true
+Button.TextWrapped = true
+
+UITextSizeConstraint_3.Parent = Button
+UITextSizeConstraint_3.MaxTextSize = 28
 
 local LocalPlayer = Players.LocalPlayer
 local character
 local humanoidRootPart
 local mainStatus = true
 
-UserInputService.InputBegan:Connect(function(input, gpe)
-    if input.KeyCode == Enum.KeyCode.RightControl and not gpe then
+UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
+    if input.KeyCode == Enum.KeyCode.RightControl and not gameProcessedEvent then
         mainStatus = not mainStatus
         Main.Visible = mainStatus
     end
@@ -76,7 +92,7 @@ Part.Transparency = 1
 if not getgenv().Network then
     getgenv().Network = {
         BaseParts = {},
-        Velocity = Vector3.new(50, 50, 50)
+        Velocity = Vector3.new(14.46262424, 14.46262424, 14.46262424)
     }
 
     local function EnablePartControl()
@@ -96,87 +112,83 @@ if not getgenv().Network then
 end
 
 local function ForcePart(v)
-    if v:IsA("BasePart") and not v.Anchored and not v:IsDescendantOf(LocalPlayer.Character) then
-        if not v.Parent:FindFirstChildOfClass("Humanoid") then
-            for _, x in ipairs(v:GetChildren()) do
-                if x:IsA("BodyMover") or x:IsA("AlignPosition") or x:IsA("Attachment") or x:IsA("Torque") then
-                    x:Destroy()
-                end
+    if v:IsA("BasePart") and not v.Anchored and not v.Parent:FindFirstChildOfClass("Humanoid") and not v.Parent:FindFirstChild("Head") and v.Name ~= "Handle" then
+        for _, x in ipairs(v:GetChildren()) do
+            if x:IsA("BodyMover") or x:IsA("RocketPropulsion") or x:IsA("AlignPosition") or x:IsA("Torque") then
+                x:Destroy()
             end
-            
-            v.CanCollide = false
-            v.CustomPhysicalProperties = PhysicalProperties.new(0, 0, 0, 0, 0)
-            
-            local Attachment2 = Instance.new("Attachment", v)
-            local AlignPosition = Instance.new("AlignPosition", v)
-            local Torque = Instance.new("Torque", v)
-            
-            Torque.Attachment0 = Attachment2
-            Torque.Torque = Vector3.new(500000, 500000, 500000)
-            
-            AlignPosition.MaxForce = math.huge
-            AlignPosition.MaxVelocity = math.huge
-            AlignPosition.Responsiveness = 300
-            AlignPosition.Attachment0 = Attachment2
-            AlignPosition.Attachment1 = Attachment1
-            
-            table.insert(getgenv().Network.BaseParts, v)
         end
+        v.CanCollide = false
+        local Torque = Instance.new("Torque", v)
+        Torque.Torque = Vector3.new(100000, 100000, 100000)
+        local AlignPosition = Instance.new("AlignPosition", v)
+        local Attachment2 = Instance.new("Attachment", v)
+        Torque.Attachment0 = Attachment2
+        AlignPosition.MaxForce = math.huge
+        AlignPosition.MaxVelocity = math.huge
+        AlignPosition.Responsiveness = 200
+        AlignPosition.Attachment0 = Attachment2
+        AlignPosition.Attachment1 = Attachment1
+        table.insert(getgenv().Network.BaseParts, v)
     end
 end
 
 local blackHoleActive = false
-local Connection
+local DescendantAddedConnection
 
-local function toggle()
+local function toggleBlackHole()
     blackHoleActive = not blackHoleActive
     if blackHoleActive then
-        Button.Text = "DEACTIVATE"
-        Button.TextColor3 = Color3.fromRGB(255, 0, 0)
+        Button.Text = "Bring On"
         for _, v in ipairs(Workspace:GetDescendants()) do
             ForcePart(v)
         end
-        Connection = Workspace.DescendantAdded:Connect(function(v)
-            if blackHoleActive then ForcePart(v) end
+        DescendantAddedConnection = Workspace.DescendantAdded:Connect(function(v)
+            if blackHoleActive then
+                ForcePart(v)
+            end
         end)
         task.spawn(function()
             while blackHoleActive and RunService.RenderStepped:Wait() do
                 if humanoidRootPart then
-                    Attachment1.WorldCFrame = humanoidRootPart.CFrame * CFrame.Angles(0, tick() * 5, 0)
+                    Attachment1.WorldCFrame = humanoidRootPart.CFrame
                 end
             end
         end)
     else
-        Button.Text = "ACTIVATE"
-        Button.TextColor3 = Color3.fromRGB(255, 255, 255)
-        if Connection then Connection:Disconnect() end
+        Button.Text = "Bring Off"
+        if DescendantAddedConnection then
+            DescendantAddedConnection:Disconnect()
+        end
         table.clear(getgenv().Network.BaseParts)
     end
 end
 
 local function getPlayer(name)
-    name = name:lower()
+    local lowerName = string.lower(name)
     for _, p in pairs(Players:GetPlayers()) do
-        if p.Name:lower():find(name) or p.DisplayName:lower():find(name) then
+        if string.find(string.lower(p.Name), lowerName) or string.find(string.lower(p.DisplayName), lowerName) then
             return p
         end
     end
 end
 
-local targetPlayer = nil
+local player = nil
 
-Box.FocusLost:Connect(function(enter)
-    if enter then
-        targetPlayer = getPlayer(Box.Text)
-        if targetPlayer then Box.Text = targetPlayer.DisplayName end
+Box.FocusLost:Connect(function(enterPressed)
+    if enterPressed then
+        player = getPlayer(Box.Text)
+        if player then
+            Box.Text = player.DisplayName
+        end
     end
 end)
 
 Button.MouseButton1Click:Connect(function()
-    if targetPlayer and targetPlayer.Character then
-        humanoidRootPart = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
-        toggle()
+    if player and player.Character then
+        character = player.Character
+        humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+        toggleBlackHole()
     end
 end)
-
 
